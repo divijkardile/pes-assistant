@@ -12,22 +12,42 @@ from app.services.chat_service import ChatService
 from app.services.document_service import DocumentService
 from app.services.plan_service import PlanAssistantService
 from app.services.session_manager import SessionManager
+from app.tools.agent_tools import (
+    create_data_agent_tool,
+    create_document_agent_tool,
+)
 from app.tools.get_plan_data_tool import GetPlanDataTool
 from app.tools.search_documents_tool import SearchDocumentsTool
 
 settings = get_settings()
 
-http_client = httpx.AsyncClient(
-    timeout=httpx.Timeout(60.0),
-)
+# ------------------------------------------------------------------
+# Logger
+# ------------------------------------------------------------------
+
+logger = logging.getLogger("PESAssistant")
+
+# ------------------------------------------------------------------
+# HTTP Client
+# ------------------------------------------------------------------
+
+http_client = httpx.AsyncClient()
+
+# ------------------------------------------------------------------
+# Repositories
+# ------------------------------------------------------------------
 
 pes_repository = PESRepository(
     http_client=http_client,
 )
 
 document_repository = DocumentRepository(
-    document_path=settings.document_path,
+    http_client=http_client,
 )
+
+# ------------------------------------------------------------------
+# Services
+# ------------------------------------------------------------------
 
 plan_service = PlanAssistantService(
     pes_repository=pes_repository,
@@ -41,6 +61,10 @@ session_manager = SessionManager(
     session_timeout_minutes=settings.session_timeout_minutes,
 )
 
+# ------------------------------------------------------------------
+# Internal Tools
+# ------------------------------------------------------------------
+
 get_plan_data_tool = GetPlanDataTool(
     plan_service=plan_service,
 )
@@ -48,6 +72,10 @@ get_plan_data_tool = GetPlanDataTool(
 search_documents_tool = SearchDocumentsTool(
     document_service=document_service,
 )
+
+# ------------------------------------------------------------------
+# Specialist Agents
+# ------------------------------------------------------------------
 
 data_agent = DataAgent(
     logger=logging.getLogger(DataAgent.__name__),
@@ -63,19 +91,42 @@ document_agent = DocumentAgent(
     search_documents_tool=search_documents_tool,
 )
 
+# ------------------------------------------------------------------
+# Orchestrator Tools
+# ------------------------------------------------------------------
+
+data_agent_tool = create_data_agent_tool(
+    data_agent=data_agent,
+)
+
+document_agent_tool = create_document_agent_tool(
+    document_agent=document_agent,
+)
+
+# ------------------------------------------------------------------
+# Orchestrator Agent
+# ------------------------------------------------------------------
+
 orchestrator_agent = OrchestratorAgent(
     logger=logging.getLogger(OrchestratorAgent.__name__),
     ollama_host=settings.ollama_host,
     model_id=settings.ollama_model,
-    data_agent=data_agent,
-    document_agent=document_agent,
+    data_agent_tool=data_agent_tool,
+    document_agent_tool=document_agent_tool,
 )
+
+# ------------------------------------------------------------------
+# Chat Service
+# ------------------------------------------------------------------
 
 chat_service = ChatService(
     session_manager=session_manager,
     orchestrator_agent=orchestrator_agent,
 )
 
+# ------------------------------------------------------------------
+# FastAPI Dependencies
+# ------------------------------------------------------------------
 
 def get_chat_service() -> ChatService:
     return chat_service
@@ -83,34 +134,6 @@ def get_chat_service() -> ChatService:
 
 def get_session_manager() -> SessionManager:
     return session_manager
-
-
-def get_orchestrator_agent() -> OrchestratorAgent:
-    return orchestrator_agent
-
-
-def get_data_agent() -> DataAgent:
-    return data_agent
-
-
-def get_document_agent() -> DocumentAgent:
-    return document_agent
-
-
-def get_plan_service() -> PlanAssistantService:
-    return plan_service
-
-
-def get_document_service() -> DocumentService:
-    return document_service
-
-
-def get_pes_repository() -> PESRepository:
-    return pes_repository
-
-
-def get_document_repository() -> DocumentRepository:
-    return document_repository
 
 
 def get_http_client() -> httpx.AsyncClient:

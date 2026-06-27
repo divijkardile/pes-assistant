@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends
 
 from app.dependencies import get_chat_service
 from app.models.requests.chat_request import ChatRequest
@@ -13,7 +13,9 @@ from app.models.responses.end_session_response import (
 from app.models.responses.start_session_response import (
     StartSessionResponse,
 )
-from app.services.chat_service import ChatService
+from app.services.interfaces.chat_service_interface import (
+    IChatService,
+)
 
 router = APIRouter(
     prefix="/chat",
@@ -24,52 +26,34 @@ router = APIRouter(
 @router.post(
     "/start",
     response_model=StartSessionResponse,
-    status_code=status.HTTP_200_OK,
 )
 async def start_session(
     request: StartSessionRequest,
-    chat_service: ChatService = Depends(get_chat_service),
+    chat_service: IChatService = Depends(get_chat_service),
 ) -> StartSessionResponse:
-    try:
-        return await chat_service.start_session(request)
-    except Exception as ex:
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=str(ex),
-        ) from ex
+
+    return await chat_service.start_session(request)
 
 
 @router.post(
     "",
     response_model=ChatResponse,
-    status_code=status.HTTP_200_OK,
 )
 async def chat(
     request: ChatRequest,
-    chat_service: ChatService = Depends(get_chat_service),
+    chat_service: IChatService = Depends(get_chat_service),
 ) -> ChatResponse:
-    try:
-        return await chat_service.chat(request)
-    except Exception as ex:
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=str(ex),
-        ) from ex
+
+    return await chat_service.chat(request)
 
 
 @router.post(
     "/end",
     response_model=EndSessionResponse,
-    status_code=status.HTTP_200_OK,
 )
 async def end_session(
     request: EndSessionRequest,
-    chat_service: ChatService = Depends(get_chat_service),
+    chat_service: IChatService = Depends(get_chat_service),
 ) -> EndSessionResponse:
-    try:
-        return await chat_service.end_session(request)
-    except Exception as ex:
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=str(ex),
-        ) from ex
+
+    return await chat_service.end_session(request)

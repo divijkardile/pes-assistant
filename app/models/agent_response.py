@@ -10,12 +10,6 @@ class AgentResponse(BaseModel):
 
     answer: str
 
-    confidence: float = 1.0
-
     sources: list[str] = Field(default_factory=list)
 
     metadata: dict[str, str] = Field(default_factory=dict)
-
-    requires_review: bool = False
-
-    needs_more_information: bool = False

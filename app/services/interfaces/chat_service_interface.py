@@ -21,18 +21,21 @@ class IChatService(ABC):
         self,
         request: StartSessionRequest,
     ) -> StartSessionResponse:
-        raise NotImplementedError
+        """Start a new chat session."""
+        ...
 
     @abstractmethod
     async def chat(
         self,
         request: ChatRequest,
     ) -> ChatResponse:
-        raise NotImplementedError
+        """Process a chat request."""
+        ...
 
     @abstractmethod
     async def end_session(
         self,
         request: EndSessionRequest,
     ) -> EndSessionResponse:
-        raise NotImplementedError
+        """End an existing chat session."""
+        ...

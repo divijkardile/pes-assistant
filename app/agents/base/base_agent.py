@@ -1,13 +1,14 @@
 import logging
 from abc import ABC
+from typing import TypeVar
 
+from pydantic import BaseModel
 from strands import Agent
+
+T = TypeVar("T", bound=BaseModel)
 
 
 class BaseAgent(ABC):
-    """
-    Base class for all AI agents.
-    """
 
     def __init__(
         self,
@@ -22,20 +23,27 @@ class BaseAgent(ABC):
         self,
         prompt: str,
     ) -> str:
-        """
-        Executes the configured Strands agent.
-        """
-
         self._logger.info(
-            "Executing agent '%s'.",
+            "%s executing.",
             self.__class__.__name__,
         )
 
         response = self._agent(prompt)
 
-        if response is None:
-            raise RuntimeError(
-                f"{self.__class__.__name__} returned no response."
-            )
-
         return str(response)
+
+    async def _execute_structured(
+        self,
+        *,
+        prompt: str,
+        response_model: type[T],
+    ) -> T:
+        self._logger.info(
+            "%s executing structured output.",
+            self.__class__.__name__,
+        )
+
+        return self._agent.structured_output(
+            output_model=response_model,
+            prompt=prompt,
+        )

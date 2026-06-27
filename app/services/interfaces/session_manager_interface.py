@@ -9,27 +9,32 @@ class ISessionManager(ABC):
     @abstractmethod
     async def create_session(
         self,
+        *,
         plan_context: PlanContext,
     ) -> AgentState:
-        raise NotImplementedError
+        """Create a new chat session."""
+        ...
 
     @abstractmethod
     async def get_session(
         self,
         session_id: str,
     ) -> AgentState:
-        raise NotImplementedError
+        """Retrieve an existing chat session."""
+        ...
 
     @abstractmethod
     async def update_session(
         self,
         state: AgentState,
     ) -> None:
-        raise NotImplementedError
+        """Persist the latest session state."""
+        ...
 
     @abstractmethod
     async def end_session(
         self,
         session_id: str,
     ) -> None:
-        raise NotImplementedError
+        """End and remove a chat session."""
+        ...

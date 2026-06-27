@@ -1,4 +1,5 @@
 from pathlib import Path
+import httpx
 
 from app.models.document_chunk import DocumentChunk
 from app.repositories.interfaces.document_repository_interface import (
@@ -17,9 +18,9 @@ class DocumentRepository(IDocumentRepository):
 
     def __init__(
         self,
-        document_path: str,
+        http_client: httpx.AsyncClient,
     ) -> None:
-        self._document_path = Path(document_path)
+        self._http_client = http_client
 
     async def search_documents(
         self,

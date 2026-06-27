@@ -8,14 +8,9 @@ from app.models.agent_response import AgentResponse
 from app.models.agent_state import AgentState
 from app.prompts.data_agent_prompt import SYSTEM_PROMPT
 from app.tools.get_plan_data_tool import GetPlanDataTool
-from app.utils.context_builder import ContextBuilder
 
 
 class DataAgent(BaseAgent):
-    """
-    AI specialist responsible for answering questions
-    using structured plan data.
-    """
 
     def __init__(
         self,
@@ -26,19 +21,18 @@ class DataAgent(BaseAgent):
         get_plan_data_tool: GetPlanDataTool,
     ) -> None:
 
-        self._get_plan_data_tool = get_plan_data_tool
-
-        agent = Agent(
-            model=OllamaModel(
-                host=ollama_host,
-                model_id=model_id,
-            ),
-            system_prompt=SYSTEM_PROMPT,
-        )
-
         super().__init__(
             logger=logger,
-            agent=agent,
+            agent=Agent(
+                model=OllamaModel(
+                    host=ollama_host,
+                    model_id=model_id,
+                ),
+                system_prompt=SYSTEM_PROMPT,
+                tools=[
+                    get_plan_data_tool.get_plan_data,
+                ],
+            ),
         )
 
     async def invoke(
@@ -46,45 +40,52 @@ class DataAgent(BaseAgent):
         *,
         state: AgentState,
         user_message: str,
-        refresh: bool = False,
     ) -> AgentResponse:
 
         self._logger.info(
-            "Invoking DataAgent."
-        )
-
-        if refresh or state.plan_data is None:
-            state.plan_data = await self._get_plan_data_tool.invoke(
-                state=state,
-            )
-
-        context = ContextBuilder.from_plan_data(
-            state.plan_data,
+            "Executing DataAgent for session '%s'.",
+            state.session_id,
         )
 
         prompt = f"""
-            Context
-            -------
-            {context}
+Participant Context
+===================
 
-            User Question
-            -------------
-            {user_message}
+Plan Number:
+{state.plan_context.plan_number}
 
-            Instructions
-            ------------
-            Answer ONLY using the plan data.
-            If the answer cannot be determined, say so.
-            Return only the answer.
-        """
+User Id:
+{state.plan_context.user_id}
 
-        answer = await self._execute(prompt)
+User Question
+=============
+
+{user_message}
+
+Instructions
+============
+
+- Always use the get_plan_data tool before answering.
+- Answer ONLY using the returned structured plan data.
+- Never invent information.
+- If the tool cannot provide the answer, clearly state that.
+- Return only the participant-facing answer.
+"""
+
+        answer = await self._execute(
+            prompt=prompt,
+        )
 
         response = AgentResponse(
             agent_name=self.__class__.__name__,
             answer=answer,
         )
 
-        state.add_agent_response(response)
+        state.agent_responses.append(response)
+
+        self._logger.info(
+            "DataAgent completed for session '%s'.",
+            state.session_id,
+        )
 
         return response

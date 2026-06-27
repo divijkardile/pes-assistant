@@ -1,15 +1,12 @@
+from strands import tool
+
 from app.models.agent_state import AgentState
-from app.models.document_chunk import DocumentChunk
 from app.services.interfaces.document_service_interface import (
     IDocumentService,
 )
 
 
 class SearchDocumentsTool:
-    """
-    Tool responsible for retrieving relevant document chunks
-    for a user's question.
-    """
 
     def __init__(
         self,
@@ -17,19 +14,47 @@ class SearchDocumentsTool:
     ) -> None:
         self._document_service = document_service
 
-    async def invoke(
+    @tool(
+        name="search_documents",
+        description="""
+Search retirement plan documents.
+
+Use this tool whenever information is required from:
+- Summary Plan Description (SPD)
+- Plan rules
+- Notices
+- Policies
+- Legal wording
+- PDFs
+- Any other plan documents
+""",
+    )
+    async def search_documents(
         self,
-        *,
         state: AgentState,
         query: str,
         top_k: int = 5,
-    ) -> list[DocumentChunk]:
-        """
-        Search plan documents relevant to the user's query.
-        """
+    ) -> str:
 
-        return await self._document_service.search_documents(
+        chunks = await self._document_service.search_documents(
             plan_context=state.plan_context,
             query=query,
             top_k=top_k,
         )
+
+        if not chunks:
+            return "No relevant documents found."
+
+        results: list[str] = []
+
+        for chunk in chunks:
+            results.append(
+                f"""
+Document: {chunk.document_name}
+Page: {chunk.page_number}
+
+{chunk.content}
+""".strip()
+            )
+
+        return "\n\n".join(results)

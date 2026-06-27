@@ -8,14 +8,9 @@ from app.models.agent_response import AgentResponse
 from app.models.agent_state import AgentState
 from app.prompts.document_agent_prompt import SYSTEM_PROMPT
 from app.tools.search_documents_tool import SearchDocumentsTool
-from app.utils.context_builder import ContextBuilder
 
 
 class DocumentAgent(BaseAgent):
-    """
-    AI specialist responsible for answering questions
-    using retrieved documents.
-    """
 
     def __init__(
         self,
@@ -26,19 +21,18 @@ class DocumentAgent(BaseAgent):
         search_documents_tool: SearchDocumentsTool,
     ) -> None:
 
-        self._search_documents_tool = search_documents_tool
-
-        agent = Agent(
-            model=OllamaModel(
-                host=ollama_host,
-                model_id=model_id,
-            ),
-            system_prompt=SYSTEM_PROMPT,
-        )
-
         super().__init__(
             logger=logger,
-            agent=agent,
+            agent=Agent(
+                model=OllamaModel(
+                    host=ollama_host,
+                    model_id=model_id,
+                ),
+                system_prompt=SYSTEM_PROMPT,
+                tools=[
+                    search_documents_tool.search_documents,
+                ],
+            ),
         )
 
     async def invoke(
@@ -46,46 +40,52 @@ class DocumentAgent(BaseAgent):
         *,
         state: AgentState,
         user_message: str,
-        top_k: int = 5,
     ) -> AgentResponse:
 
-        chunks = await self._search_documents_tool.invoke(
-            state=state,
-            query=user_message,
-            top_k=top_k,
-        )
-
-        context = ContextBuilder.from_document_chunks(
-            chunks,
+        self._logger.info(
+            "Executing DocumentAgent for session '%s'.",
+            state.session_id,
         )
 
         prompt = f"""
-            Context
-            -------
-            {context}
+Participant Context
+===================
 
-            User Question
-            -------------
-            {user_message}
+Plan Number:
+{state.plan_context.plan_number}
 
-            Instructions
-            ------------
-            Answer ONLY from the supplied documents.
-            If the answer is unavailable, clearly say so.
-            Return only the answer.
-        """
+User Id:
+{state.plan_context.user_id}
 
-        answer = await self._execute(prompt)
+User Question
+=============
+
+{user_message}
+
+Instructions
+============
+
+- Always use the search_documents tool before answering.
+- Answer ONLY using the retrieved document content.
+- Never invent information.
+- If the requested information is unavailable, clearly state that.
+- Return only the participant-facing answer.
+"""
+
+        answer = await self._execute(
+            prompt=prompt,
+        )
 
         response = AgentResponse(
             agent_name=self.__class__.__name__,
             answer=answer,
-            sources=[
-                chunk.document_name
-                for chunk in chunks
-            ],
         )
 
-        state.add_agent_response(response)
+        state.agent_responses.append(response)
+
+        self._logger.info(
+            "DocumentAgent completed for session '%s'.",
+            state.session_id,
+        )
 
         return response
