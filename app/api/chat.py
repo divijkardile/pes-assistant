@@ -1,6 +1,10 @@
 from fastapi import APIRouter, Depends
 
-from app.dependencies import get_chat_service
+from app.dependencies import (
+    get_ai_gateway,
+    get_chat_service,
+)
+from app.gateway.ai_gateway import AIGateway
 from app.models.requests.chat_request import ChatRequest
 from app.models.requests.end_session_request import EndSessionRequest
 from app.models.requests.start_session_request import (
@@ -41,10 +45,10 @@ async def start_session(
 )
 async def chat(
     request: ChatRequest,
-    chat_service: IChatService = Depends(get_chat_service),
+    ai_gateway: AIGateway = Depends(get_ai_gateway),
 ) -> ChatResponse:
 
-    return await chat_service.chat(request)
+    return await ai_gateway.handle_chat(request)
 
 
 @router.post(

@@ -1,3 +1,5 @@
+# app/main.py
+
 from contextlib import asynccontextmanager
 
 from fastapi import FastAPI
@@ -5,6 +7,9 @@ from fastapi import FastAPI
 from app.api.chat import router as chat_router
 from app.config.logging import configure_logging
 from app.config.settings import get_settings
+from app.qdrant.qdrant_initializer import (
+    initialize_qdrant,
+)
 
 
 @asynccontextmanager
@@ -14,6 +19,9 @@ async def lifespan(app: FastAPI):
     configure_logging(
         settings.log_level,
     )
+
+    if settings.semantic_cache_enabled:
+        await initialize_qdrant()
 
     yield
 

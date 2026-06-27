@@ -1,9 +1,7 @@
 import logging
 
-from strands import Agent
-from strands.models.ollama import OllamaModel
-
 from app.agents.base.base_agent import BaseAgent
+from app.llm.interfaces.llm_provider import LLMProvider
 from app.models.agent_response import AgentResponse
 from app.models.agent_state import AgentState
 from app.prompts.data_agent_prompt import SYSTEM_PROMPT
@@ -16,23 +14,17 @@ class DataAgent(BaseAgent):
         self,
         *,
         logger: logging.Logger,
-        ollama_host: str,
-        model_id: str,
+        llm_provider: LLMProvider,
         get_plan_data_tool: GetPlanDataTool,
     ) -> None:
 
         super().__init__(
             logger=logger,
-            agent=Agent(
-                model=OllamaModel(
-                    host=ollama_host,
-                    model_id=model_id,
-                ),
-                system_prompt=SYSTEM_PROMPT,
-                tools=[
-                    get_plan_data_tool.get_plan_data,
-                ],
-            ),
+            llm_provider=llm_provider,
+            system_prompt=SYSTEM_PROMPT,
+            tools=[
+                get_plan_data_tool.get_plan_data,
+            ],
         )
 
     async def invoke(
@@ -52,7 +44,7 @@ Participant Context
 ===================
 
 Plan Number:
-{state.plan_context.plan_number}
+{state.plan_context.plan_num}
 
 User Id:
 {state.plan_context.user_id}
@@ -65,11 +57,11 @@ User Question
 Instructions
 ============
 
-- Always use the get_plan_data tool before answering.
-- Answer ONLY using the returned structured plan data.
+- Always use the get_plan_data tool.
+- Use only the structured plan data returned by the tool.
 - Never invent information.
-- If the tool cannot provide the answer, clearly state that.
-- Return only the participant-facing answer.
+- If the requested information is unavailable, clearly state that.
+- Return only the participant-facing response.
 """
 
         answer = await self._execute(
@@ -81,7 +73,9 @@ Instructions
             answer=answer,
         )
 
-        state.agent_responses.append(response)
+        state.agent_responses.append(
+            response,
+        )
 
         self._logger.info(
             "DataAgent completed for session '%s'.",

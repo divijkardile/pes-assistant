@@ -1,9 +1,7 @@
 import logging
 
-from strands import Agent
-from strands.models.ollama import OllamaModel
-
 from app.agents.base.base_agent import BaseAgent
+from app.llm.interfaces.llm_provider import LLMProvider
 from app.models.agent_state import AgentState
 from app.prompts.orchestrator_prompt import SYSTEM_PROMPT
 
@@ -14,25 +12,19 @@ class OrchestratorAgent(BaseAgent):
         self,
         *,
         logger: logging.Logger,
-        ollama_host: str,
-        model_id: str,
+        llm_provider: LLMProvider,
         data_agent_tool,
         document_agent_tool,
     ) -> None:
 
         super().__init__(
             logger=logger,
-            agent=Agent(
-                model=OllamaModel(
-                    host=ollama_host,
-                    model_id=model_id,
-                ),
-                system_prompt=SYSTEM_PROMPT,
-                tools=[
-                    data_agent_tool,
-                    document_agent_tool,
-                ],
-            ),
+            llm_provider=llm_provider,
+            system_prompt=SYSTEM_PROMPT,
+            tools=[
+                data_agent_tool,
+                document_agent_tool,
+            ],
         )
 
     async def invoke(
@@ -57,13 +49,18 @@ Session Id:
 {state.session_id}
 
 Plan Number:
-{state.plan_context.plan_number}
+{state.plan_context.plan_num}
 
 User Id:
 {state.plan_context.user_id}
 
-Conversation History
+Conversation Summary
 ====================
+
+{state.conversation_summary.summary or "No conversation summary available."}
+
+Recent Conversation
+===================
 
 {state.messages}
 
@@ -85,18 +82,20 @@ Tool 1:
 
 Tool 2:
 - document_agent
-- Searches plan documents and explains plan rules.
+- Searches retirement plan documents.
 
 Rules:
 
-1. Decide yourself which tool(s) are required.
-2. Use ONLY the required tool(s).
-3. If one tool is sufficient, do not call the other.
-4. If both are needed, call both.
-5. Review the returned responses.
-6. Combine them into one complete answer.
-7. Never expose internal implementation.
-8. Return only the participant-facing response.
+1. Read the conversation summary first.
+2. Read the recent conversation.
+3. Decide which specialist is required.
+4. Use only the required specialist.
+5. If both specialists are required, call both.
+6. Combine their responses into one participant-friendly answer.
+7. Never expose internal implementation details.
+8. Never fabricate information.
+9. If information is unavailable, clearly state that.
+10. Return only the final participant-facing response.
 """
 
         answer = await self._execute(

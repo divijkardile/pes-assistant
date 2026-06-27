@@ -5,4 +5,4 @@ class StartSessionRequest(BaseModel):
     """Request to start a new chat session."""
 
     user_id: str
-    plan_number: str
+    plan_num: str

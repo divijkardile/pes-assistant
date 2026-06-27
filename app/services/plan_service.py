@@ -20,7 +20,7 @@ class PlanAssistantService(IPlanService):
         plan_context: PlanContext,
     ) -> PlanData:
         return await self._pes_repository.get_plan_data(
-            plan_number=plan_context.plan_number,
+            plan_number=plan_context.plan_num,
             user_id=plan_context.user_id,
         )
 

@@ -1,9 +1,7 @@
 import logging
 
-from strands import Agent
-from strands.models.ollama import OllamaModel
-
 from app.agents.base.base_agent import BaseAgent
+from app.llm.interfaces.llm_provider import LLMProvider
 from app.models.agent_response import AgentResponse
 from app.models.agent_state import AgentState
 from app.prompts.document_agent_prompt import SYSTEM_PROMPT
@@ -16,23 +14,17 @@ class DocumentAgent(BaseAgent):
         self,
         *,
         logger: logging.Logger,
-        ollama_host: str,
-        model_id: str,
+        llm_provider: LLMProvider,
         search_documents_tool: SearchDocumentsTool,
     ) -> None:
 
         super().__init__(
             logger=logger,
-            agent=Agent(
-                model=OllamaModel(
-                    host=ollama_host,
-                    model_id=model_id,
-                ),
-                system_prompt=SYSTEM_PROMPT,
-                tools=[
-                    search_documents_tool.search_documents,
-                ],
-            ),
+            llm_provider=llm_provider,
+            system_prompt=SYSTEM_PROMPT,
+            tools=[
+                search_documents_tool.search_documents,
+            ],
         )
 
     async def invoke(
@@ -52,7 +44,7 @@ Participant Context
 ===================
 
 Plan Number:
-{state.plan_context.plan_number}
+{state.plan_context.plan_num}
 
 User Id:
 {state.plan_context.user_id}
@@ -65,11 +57,11 @@ User Question
 Instructions
 ============
 
-- Always use the search_documents tool before answering.
+- Always use the search_documents tool.
 - Answer ONLY using the retrieved document content.
 - Never invent information.
 - If the requested information is unavailable, clearly state that.
-- Return only the participant-facing answer.
+- Return only the participant-facing response.
 """
 
         answer = await self._execute(
@@ -81,7 +73,9 @@ Instructions
             answer=answer,
         )
 
-        state.agent_responses.append(response)
+        state.agent_responses.append(
+            response,
+        )
 
         self._logger.info(
             "DocumentAgent completed for session '%s'.",

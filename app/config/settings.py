@@ -1,11 +1,9 @@
 from functools import lru_cache
 
-from pydantic import Field
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
 class Settings(BaseSettings):
-    """Application configuration loaded from environment variables."""
 
     model_config = SettingsConfigDict(
         env_file=".env",
@@ -14,64 +12,64 @@ class Settings(BaseSettings):
         extra="ignore",
     )
 
-    # ------------------------------------------------------------------
     # Application
-    # ------------------------------------------------------------------
-
     app_name: str = "PES Assistant"
-
     app_version: str = "1.0.0"
+    environment: str = "development"
+    debug: bool = False
+    api_prefix: str = "/api/v1"
 
-    environment: str = Field(
-        default="development",
-    )
+    # Retry
+    retry_max_attempts: int = 2
+    retry_initial_delay: float = 0.5
+    retry_backoff_multiplier: float = 2.0
 
-    debug: bool = Field(
-        default=False,
-    )
+    # LLM
+    llm_provider: str = "ollama"
 
-    api_prefix: str = Field(
-        default="/api/v1",
-    )
-
-    # ------------------------------------------------------------------
-    # Logging
-    # ------------------------------------------------------------------
-
-    log_level: str = Field(
-        default="INFO",
-    )
-
-    # ------------------------------------------------------------------
     # Ollama
-    # ------------------------------------------------------------------
+    ollama_host: str = "http://localhost:11434"
+    ollama_model: str = "llama3.2"
+    ollama_embedding_model: str = "nomic-embed-text"
 
-    ollama_host: str = Field(
-    default="http://localhost:11434",
+    # Bedrock
+    aws_region: str = "us-east-1"
+    bedrock_model: str = (
+        "anthropic.claude-3-5-sonnet-20241022-v2:0"
     )
 
-    ollama_model: str = Field(
-        default="qwen3:8b",
+    bedrock_embedding_model: str = (
+        "amazon.titan-embed-text-v2:0"
     )
 
-    # ------------------------------------------------------------------
+    aws_access_key_id: str | None = None
+    aws_secret_access_key: str | None = None
+    aws_session_token: str | None = None
+
+    # Embeddings
+    embedding_dimension: int = 768
+
+    # Qdrant
+    qdrant_host: str = "localhost"
+    qdrant_port: int = 6333
+    qdrant_api_key: str | None = None
+
+    # Semantic Cache
+    semantic_cache_enabled: bool = False
+    semantic_cache_collection_name: str = "semantic_cache"
+    semantic_cache_similarity_threshold: float = 0.95
+    semantic_cache_ttl_minutes: int = 30
+
     # Documents
-    # ------------------------------------------------------------------
+    document_path: str = "./documents"
 
-    document_path: str = Field(
-        default="./documents",
-    )
-
-    # ------------------------------------------------------------------
     # Session
-    # ------------------------------------------------------------------
+    session_timeout_minutes: int = 30
 
-    session_timeout_minutes: int = Field(
-        default=30,
-    )
+    # Logging
+    log_level: str = "INFO"
 
 
 @lru_cache
 def get_settings() -> Settings:
-    """Returns a cached application settings instance."""
-    return Settings()
+    return Settings() # type: ignore
