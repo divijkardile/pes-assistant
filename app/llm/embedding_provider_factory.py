@@ -11,6 +11,9 @@ from app.llm.providers.bedrock_embedding_provider import (
 from app.llm.providers.ollama_embedding_provider import (
     OllamaEmbeddingProvider,
 )
+from app.llm.providers.openai_embedding_provider import (
+    OpenAIEmbeddingProvider
+)
 
 
 class EmbeddingProviderFactory:
@@ -19,6 +22,8 @@ class EmbeddingProviderFactory:
     def get_provider() -> EmbeddingProvider:
 
         settings = get_settings()
+
+        print(settings)
 
         provider = settings.llm_provider.lower()
 
@@ -29,6 +34,9 @@ class EmbeddingProviderFactory:
 
             case "bedrock":
                 return BedrockEmbeddingProvider()
+            
+            case "openai":
+                return OpenAIEmbeddingProvider()
 
             case _:
                 raise EmbeddingProviderException(

@@ -46,6 +46,11 @@ class Settings(BaseSettings):
     aws_secret_access_key: str | None = None
     aws_session_token: str | None = None
 
+    #Open AI
+    openai_api_key: str =""
+    openai_model: str ="gpt-5.5"
+    openai_embedding_model: str ="text-embedding-3-small"
+
     # Embeddings
     embedding_dimension: int = 768
 

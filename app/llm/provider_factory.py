@@ -12,6 +12,10 @@ from app.llm.providers.ollama_provider import (
     OllamaProvider,
 )
 
+from app.llm.providers.openai_provider import (
+    OpenAIProvider
+)
+
 
 class ProviderFactory:
 
@@ -29,6 +33,9 @@ class ProviderFactory:
 
             case "bedrock":
                 return BedrockProvider()
+            
+            case "openai":
+                return OpenAIProvider()
 
             case _:
                 raise ModelProviderException(
