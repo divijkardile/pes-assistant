@@ -10,6 +10,7 @@ from app.config.settings import get_settings
 from app.qdrant.qdrant_initializer import (
     initialize_qdrant,
 )
+#from app.api.health import router as qdrant_router
 
 
 @asynccontextmanager

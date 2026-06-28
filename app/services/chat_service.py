@@ -88,6 +88,19 @@ class ChatService(IChatService):
         )
 
         if cached is not None:
+            state.messages.append(
+                ChatMessage(
+                    role=Roles.USER,
+                    content=request.message,
+                )
+            )
+            state.messages.append(
+                ChatMessage(
+                    role=Roles.ASSISTANT,
+                    content=cached,
+                )
+            )
+            await self._session_manager.update_session(state)
             return ChatResponse(
                 session_id=state.session_id,
                 response=cached,

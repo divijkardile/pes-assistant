@@ -1,10 +1,17 @@
+import logging
 from pathlib import Path
+
 import httpx
 
+from app.config.settings import get_settings
+from app.gateway.api_helper import call_external_api
 from app.models.document_chunk import DocumentChunk
 from app.repositories.interfaces.document_repository_interface import (
     IDocumentRepository,
 )
+from app.utils.execution_timer import execution_timer
+
+logger = logging.getLogger(__name__)
 
 
 class DocumentRepository(IDocumentRepository):
@@ -22,6 +29,7 @@ class DocumentRepository(IDocumentRepository):
     ) -> None:
         self._http_client = http_client
 
+    @execution_timer
     async def search_documents(
         self,
         *,
@@ -29,7 +37,6 @@ class DocumentRepository(IDocumentRepository):
         query: str,
         top_k: int = 5,
     ) -> list[DocumentChunk]:
-
         # ------------------------------------------------------------------
         # TODO:
         #
@@ -44,5 +51,4 @@ class DocumentRepository(IDocumentRepository):
         #
         # return await self._vector_store.search(...)
         # ------------------------------------------------------------------
-
         return []

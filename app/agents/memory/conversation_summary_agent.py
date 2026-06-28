@@ -3,6 +3,7 @@
 import logging
 
 from app.agents.base.base_agent import BaseAgent
+from app.exceptions.agent_exception import AgentException
 from app.llm.interfaces.llm_provider import (
     LLMProvider,
 )
@@ -79,9 +80,29 @@ Keep the summary concise.
 Return only the updated summary.
 """
 
-        summary = await self._execute(
-            prompt=prompt,
-        )
+        try:
+            summary = await self._execute(
+                prompt=prompt,
+            )
+
+            # Validate summary is not empty
+            if not summary or summary.strip() == "":
+                error_msg = (
+                    f"Summary generation failed for session "
+                    f"{state.session_id} - empty response"
+                )
+                self._logger.error(error_msg)
+                # Return previous summary as fallback
+                return previous_summary
+
+        except Exception as e:
+            error_msg = (
+                f"Summary generation error for session "
+                f"{state.session_id}: {str(e)}"
+            )
+            self._logger.error(error_msg)
+            # Return previous summary as fallback instead of crashing
+            return previous_summary
 
         self._logger.info(
             "Conversation summary generated for session '%s'.",

@@ -66,6 +66,23 @@ class Settings(BaseSettings):
     # Session
     session_timeout_minutes: int = 30
 
+    # Agent Robustness (Timeout & Loop Prevention)
+    agent_timeout_seconds: int = 30
+    agent_max_iterations: int = 5
+    tool_timeout_seconds: int = 15
+    enable_loop_detection: bool = True
+    loop_detection_threshold: int = 4  # Warn if same tool called > this many times
+
+    # OAuth Configuration
+    oauth_enabled: bool = False
+    oauth_token_url: str | None = None
+    oauth_scope: str | None = None  # e.g., "read write"
+
+    # External API Endpoints (Placeholders)
+    # Replace these with your actual API endpoints
+    external_api_pes_base_url: str | None = None  # e.g., "https://api.pes.com"
+    external_api_documents_base_url: str | None = None  # e.g., "https://api.documents.com"
+
     # Logging
     log_level: str = "INFO"
 

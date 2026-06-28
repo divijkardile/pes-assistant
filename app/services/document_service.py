@@ -28,7 +28,7 @@ class DocumentService(IDocumentService):
     ) -> list[DocumentChunk]:
 
         return await self._document_repository.search_documents(
-            plan_number=plan_context.plan_number,
+            plan_number=plan_context.plan_num,
             query=query,
             top_k=top_k,
         )

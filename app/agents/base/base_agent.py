@@ -1,9 +1,15 @@
+import asyncio
 import logging
 from abc import ABC
 from typing import TypeVar
 
 from pydantic import BaseModel
 
+from app.config.settings import get_settings
+from app.exceptions.agent_exception import AgentException
+from app.exceptions.agent_timeout_exception import (
+    AgentTimeoutException,
+)
 from app.llm.interfaces.llm_provider import (
     LLMProvider,
 )
@@ -38,11 +44,30 @@ class BaseAgent(ABC):
             self.__class__.__name__,
         )
 
-        response = self._agent(
-            prompt,
-        )
+        settings = get_settings()
+        timeout_seconds = settings.agent_timeout_seconds
 
-        return str(response)
+        try:
+            response = await asyncio.wait_for(
+                asyncio.to_thread(self._agent, prompt),
+                timeout=timeout_seconds,
+            )
+            return str(response)
+
+        except asyncio.TimeoutError:
+            error_msg = (
+                f"{self.__class__.__name__} execution timeout "
+                f"after {timeout_seconds} seconds"
+            )
+            self._logger.error(error_msg)
+            raise AgentTimeoutException(error_msg)
+
+        except Exception as e:
+            error_msg = (
+                f"{self.__class__.__name__} execution failed: {str(e)}"
+            )
+            self._logger.error(error_msg)
+            raise AgentException(error_msg)
 
     async def _execute_structured(
         self,
@@ -56,7 +81,31 @@ class BaseAgent(ABC):
             self.__class__.__name__,
         )
 
-        return self._agent.structured_output(
-            output_model=response_model,
-            prompt=prompt,
-        )
+        settings = get_settings()
+        timeout_seconds = settings.agent_timeout_seconds
+
+        try:
+            return await asyncio.wait_for(
+                asyncio.to_thread(
+                    self._agent.structured_output,
+                    response_model,
+                    prompt,
+                ),
+                timeout=timeout_seconds,
+            )
+
+        except asyncio.TimeoutError:
+            error_msg = (
+                f"{self.__class__.__name__} structured execution timeout "
+                f"after {timeout_seconds} seconds"
+            )
+            self._logger.error(error_msg)
+            raise AgentTimeoutException(error_msg)
+
+        except Exception as e:
+            error_msg = (
+                f"{self.__class__.__name__} structured execution failed: "
+                f"{str(e)}"
+            )
+            self._logger.error(error_msg)
+            raise AgentException(error_msg)
